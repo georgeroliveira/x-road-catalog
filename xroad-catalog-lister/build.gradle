@@ -1,5 +1,5 @@
 plugins {
-    id "org.springframework.boot" version "${springBootVersion}"
+    alias (libs.plugins.spring.boot)
     id 'java'
     id 'eclipse'
     id 'idea'
@@ -71,23 +71,23 @@ jar {
 
 dependencies {
     implementation project(':xroad-catalog-persistence')
-
-    implementation("javax.ws.rs:javax.ws.rs-api:${jakartaVersion}")
-    implementation("org.springdoc:springdoc-openapi-ui:${springDocVersion}")
-    implementation ("org.apache.commons:commons-csv:${commonsCsvVersion}")
-    implementation("org.springframework.boot:spring-boot-starter-web-services:${springBootVersion}")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}")
-    implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
-    implementation("wsdl4j:wsdl4j:${wsdl4jVersion}")
     implementation(files(genJaxb.classesDir).builtBy(genJaxb))
-    implementation("commons-beanutils:commons-beanutils:${commonsBeanUtilsVersion}")
-    implementation("com.google.guava:guava:${guavaVersion}")
-    jaxb("com.sun.xml.bind:jaxb-xjc:${XjcVersion}")
-    implementation("org.projectlombok:lombok:${lombokVersion}")
-    annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
-    testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
-    testImplementation("org.projectlombok:lombok:${lombokVersion}")
-    testAnnotationProcessor("org.projectlombok:lombok:${lombokVersion}")
+
+    implementation (libs.jakarta)
+    implementation (libs.spring.doc)
+    implementation (libs.commons.csv)
+    implementation (libs.spring.boot.ws)
+    implementation (libs.spring.boot.jpa)
+    implementation (libs.jackson)
+    implementation (libs.wsdl4j)
+    implementation (libs.commons.bean.utils)
+    implementation (libs.guava)
+    jaxb (libs.xjc)
+    implementation (libs.lombok)
+    annotationProcessor (libs.lombok)
+    testImplementation (libs.spring.boot.test)
+    testImplementation (libs.lombok)
+    testAnnotationProcessor (libs.lombok)
 }
 
 test {
