@@ -10,6 +10,7 @@ on:
       - 'xroad-catalog-lister/src/**'
       - 'xroad-catalog-persistence/src/**'
       - '.github/**'
+      - 'gradle/libs.versions.toml' # So that dependabot PRs are tested
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -17,6 +18,8 @@ on:
       - 'xroad-catalog-lister/src/**'
       - 'xroad-catalog-persistence/src/**'
       - '.github/**'
+      - 'gradle/libs.versions.toml' # So that dependabot PRs are tested
+
 permissions:
   contents: write # Required for https://github.com/gradle/actions/tree/main/setup-gradle#github-dependency-graph-support
   pull-requests: write # https://github.com/gradle/actions/tree/main/setup-gradle#adding-job-summary-as-a-pull-request-comment
