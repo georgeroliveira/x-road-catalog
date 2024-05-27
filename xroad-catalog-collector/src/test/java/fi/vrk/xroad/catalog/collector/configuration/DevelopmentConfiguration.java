@@ -27,9 +27,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestOperations;
 
-
 @Configuration
-@Profile( {"development", "default", "fi"})
+@Profile({ "development", "default", "fi" })
 @Slf4j
 public class DevelopmentConfiguration extends ApplicationConfiguration {
 
@@ -40,12 +39,10 @@ public class DevelopmentConfiguration extends ApplicationConfiguration {
         return new MockRestTemplate();
     }
 
-    // to start CXF (for mock web service)
     @Bean
-    public ServletRegistrationBean servletRegistrationBean() {
-        return new ServletRegistrationBean(new CXFServlet(), "/*");
+    public ServletRegistrationBean<CXFServlet> servletRegistrationBean() {
+        return new ServletRegistrationBean<>(new CXFServlet(), "/*");
     }
-
 
     @Bean
     @Lazy(value = false)

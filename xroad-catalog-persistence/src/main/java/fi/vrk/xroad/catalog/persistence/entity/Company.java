@@ -12,11 +12,31 @@
  */
 package fi.vrk.xroad.catalog.persistence.entity;
 
-import lombok.*;
-import javax.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
 
 @Entity
 @Getter
@@ -35,7 +55,7 @@ import java.util.Set;
         "registeredOffices",
         "contactDetails",
         "registeredEntries",
-        "businessIdChanges"})
+        "businessIdChanges" })
 @EqualsAndHashCode(exclude = {
         "id",
         "statusInfo",
@@ -49,12 +69,11 @@ import java.util.Set;
         "registeredOffices",
         "contactDetails",
         "registeredEntries",
-        "businessIdChanges"})
-@NamedQueries({@NamedQuery(name = "Company.findAllByBusinessId", query = Company.FIND_ALL_BY_BUSINESS_ID)})
+        "businessIdChanges" })
+@NamedQueries({ @NamedQuery(name = "Company.findAllByBusinessId", query = Company.FIND_ALL_BY_BUSINESS_ID) })
 public class Company {
 
-    static final String FIND_ALL_BY_BUSINESS_ID =
-            "SELECT DISTINCT com FROM Company com WHERE com.businessId = :businessId";
+    static final String FIND_ALL_BY_BUSINESS_ID = "SELECT DISTINCT com FROM Company com WHERE com.businessId = :businessId";
 
     @Id
     @Column(nullable = false)

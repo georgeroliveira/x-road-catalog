@@ -3,6 +3,7 @@ plugins {
     alias (libs.plugins.sonarqube)
     id 'idea'
     id 'jacoco'
+    id 'checkstyle'
 }
 
 repositories {
@@ -11,22 +12,23 @@ repositories {
 
 idea {
     project {
-        jdkName = '11'
-        languageLevel = '11'
+        jdkName = '21'
+        languageLevel = '21'
     }
     module {
         downloadSources = true
         excludeDirs -= file(buildDir)
+        // FIXME: This might be wrong with the switch to WSDL2JAVA or even not needed
         buildDir.listFiles({ d, f -> f != 'generated-sources/wsimport' } as FilenameFilter).each { excludeDirs += it }
     }
 }
 
 wrapper {
-    gradleVersion = '7.6'
+    gradleVersion = '8.7'
 }
 
 ext {
-    project_version='3.0.4'
+    project_version='4.0.0'
 }
 
 
@@ -34,15 +36,3 @@ allprojects {
     group = 'fi.vrk.xroad'
     version = project_version
 }
-
-subprojects {
-    apply plugin: 'com.github.hierynomus.license'
-
-    license {
-        header rootProject.file('LICENSE.txt')
-        include "**/*.java"
-        exclude "**/wsimport/*"
-    }
-}
-
-

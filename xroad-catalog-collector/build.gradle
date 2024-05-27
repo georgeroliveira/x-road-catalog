@@ -1,14 +1,16 @@
+
 plugins {
     alias (libs.plugins.spring.boot)
     id 'java'
     id 'eclipse'
     id 'idea'
     id 'jacoco'
+    id 'catalogservice.java-checks'
 }
 
 group 'fi.vrk.xroad.catalog.collector'
-sourceCompatibility = 11
-targetCompatibility = 11
+sourceCompatibility = 21
+targetCompatibility = 21
 
 repositories {
     mavenCentral()
@@ -33,6 +35,10 @@ bootJar {
 
 jar {
     enabled = false
+}
+
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.WARN
 }
 
 springBoot {
@@ -67,10 +73,12 @@ task wsImport {
     }
 }
 
+licenseMain.dependsOn wsImport
+
 dependencies {
     implementation project(':xroad-catalog-persistence')
-    implementation (libs.javax.annotation)
-    implementation (libs.javax.jaxb)
+    implementation (libs.jakarta.annotation)
+    implementation (libs.jakarta.jaxb)
     implementation (libs.guava)
     implementation (libs.http.client)
     implementation (libs.json)
@@ -81,6 +89,7 @@ dependencies {
     implementation (libs.cxf.jaxws)
     implementation (libs.cxf.transport)
     implementation (libs.cxf.core)
+    implementation (libs.cxf.spring.starter)
     implementation (libs.lombok)
     annotationProcessor (libs.lombok)
     wsimport (libs.jaxb.maven)
@@ -92,8 +101,8 @@ dependencies {
     testImplementation (libs.akka.testkit)
     testImplementation (libs.lombok)
     testAnnotationProcessor (libs.lombok)
-    testImplementation (libs.javax.annotation)
-    testImplementation (libs.javax.jaxb)
+    testImplementation (libs.jakarta.annotation)
+    testImplementation (libs.jakarta.jaxb)
 }
 
 compileJava.dependsOn wsImport

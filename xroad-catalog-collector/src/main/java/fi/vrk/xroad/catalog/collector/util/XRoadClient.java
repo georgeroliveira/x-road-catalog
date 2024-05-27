@@ -12,7 +12,17 @@
  */
 package fi.vrk.xroad.catalog.collector.util;
 
-import fi.vrk.xroad.catalog.collector.wsimport.*;
+import fi.vrk.xroad.catalog.collector.wsimport.ClientType;
+import fi.vrk.xroad.catalog.collector.wsimport.GetWsdl;
+import fi.vrk.xroad.catalog.collector.wsimport.GetWsdlResponse;
+import fi.vrk.xroad.catalog.collector.wsimport.ListMethods;
+import fi.vrk.xroad.catalog.collector.wsimport.ListMethodsResponse;
+import fi.vrk.xroad.catalog.collector.wsimport.MetaServicesPort;
+import fi.vrk.xroad.catalog.collector.wsimport.ProducerPortService;
+import fi.vrk.xroad.catalog.collector.wsimport.XRoadClientIdentifierType;
+import fi.vrk.xroad.catalog.collector.wsimport.XRoadIdentifierType;
+import fi.vrk.xroad.catalog.collector.wsimport.XRoadObjectType;
+import fi.vrk.xroad.catalog.collector.wsimport.XRoadServiceIdentifierType;
 import fi.vrk.xroad.catalog.persistence.CatalogService;
 import fi.vrk.xroad.catalog.persistence.entity.ErrorLog;
 import jakarta.activation.DataHandler;
@@ -31,27 +41,70 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
 public class XRoadClient {
 
+    static final int HTTP_CONNECTION_TIMEOUT = 30000;
+    static final int HTTP_RECEIVE_TIMEOUT = 60000;
+
+    static final Map<URL, MetaServicesPort> META_SERVICE_PORTS = new HashMap<>();
     final MetaServicesPort metaServicesPort;
+
     final XRoadClientIdentifierType clientId;
 
     public XRoadClient(XRoadClientIdentifierType clientId, URL serverUrl) {
         this.metaServicesPort = getMetaServicesPort(serverUrl);
-
         final XRoadClientIdentifierType tmp = new XRoadClientIdentifierType();
         copyIdentifierType(tmp, clientId);
         this.clientId = tmp;
     }
 
+    private static synchronized MetaServicesPort getMetaServicesPort(URL serverUrl) {
+        /**
+         * This is currently a workaround, since the current approach results in all the
+         * dispatchers creating a new port, which in turn causes a failure due to HTTP
+         * code 429 (Too Many Requests) from W3C's server.
+         *
+         * An issue is that CXF ports are not thread-safe, however that is
+         * mostly for the cases of configuring it, which we do in
+         * {@link}fi.vrk.xroad.catalog.collector.util.XRoadClient#getMetaServicesPort(URL)}.
+         * Actually using the port in multiple threads to do requests as a client should
+         * be safe.
+         *
+         * Nevertheless, this should be refactored when migrating away from Akka.
+         * Currently just a stop-gap solution to get the JAVA21 build version running
+         * correctish.
+         *
+         * A few alternatives I have come across for this are:
+         *
+         * - Try to use cataloging, which links the online resources to local files.
+         * Though this apparently is pretty hit or miss depending on the implementation.
+         * Some information suggests CXF does not support this.
+         *
+         * - Another alternative would be to use XRD4J once it is updated to JAVA21,
+         * since it doesn't try to parse the WSDL every time.
+         *
+         */
+        MetaServicesPort port = META_SERVICE_PORTS.get(serverUrl);
+        if (!META_SERVICE_PORTS.containsKey(serverUrl)) {
+            port = createMetaServicesPort(serverUrl);
+            META_SERVICE_PORTS.put(serverUrl, port);
+        } else {
+            port = META_SERVICE_PORTS.get(serverUrl);
+        }
+        return port;
+    }
+
     /**
      * Calls the service using JAX-WS endpoints that have been generated from wsdl
      */
-    public List<XRoadServiceIdentifierType> getMethods(XRoadClientIdentifierType member, CatalogService catalogService) {
+    public List<XRoadServiceIdentifierType> getMethods(XRoadClientIdentifierType member,
+            CatalogService catalogService) {
         XRoadServiceIdentifierType serviceIdentifierType = new XRoadServiceIdentifierType();
         copyIdentifierType(serviceIdentifierType, member);
 
@@ -70,7 +123,7 @@ public class XRoadClient {
                     userId(),
                     queryId(),
                     protocolVersion());
-        } catch(Exception e) {
+        } catch (Exception e) {
             log.error("Fetch of SOAP services failed: " + e.getMessage());
             ErrorLog errorLog = ErrorLog.builder()
                     .created(LocalDateTime.now())
@@ -116,7 +169,7 @@ public class XRoadClient {
                     protocolVersion(),
                     response,
                     wsdl);
-        } catch(Exception e) {
+        } catch (Exception e) {
             log.error("Fetch of WSDL failed: " + e.getMessage());
             ErrorLog errorLog = ErrorLog.builder()
                     .created(LocalDateTime.now())
@@ -135,12 +188,11 @@ public class XRoadClient {
             catalogService.saveErrorLog(errorLog);
         }
 
-
         if (!(wsdl.value instanceof byte[])) {
             DataHandler dh = null;
             final Client client = ClientProxy.getClient(metaServicesPort);
-            final Collection<Attachment> attachments =
-                    (Collection<Attachment>)client.getResponseContext().get(Message.ATTACHMENTS);
+            final Collection<Attachment> attachments = (Collection<Attachment>) client.getResponseContext()
+                    .get(Message.ATTACHMENTS);
             if (attachments != null && attachments.size() == 1) {
                 dh = attachments.iterator().next().getDataHandler();
             } else {
@@ -167,7 +219,7 @@ public class XRoadClient {
                 }
                 dh.writeTo(buf);
                 return buf.toString(StandardCharsets.UTF_8.name());
-            } catch (IOException|NullPointerException e) {
+            } catch (IOException | NullPointerException e) {
                 log.error("Error downloading WSDL: ", e.getMessage());
                 ErrorLog errorLog = ErrorLog.builder()
                         .created(LocalDateTime.now())
@@ -192,12 +244,12 @@ public class XRoadClient {
     }
 
     public String getOpenApi(XRoadRestServiceIdentifierType service,
-                             String host,
-                             String xRoadInstance,
-                             String memberClass,
-                             String memberCode,
-                             String subsystemCode,
-                             CatalogService catalogService) {
+            String host,
+            String xRoadInstance,
+            String memberClass,
+            String memberCode,
+            String subsystemCode,
+            CatalogService catalogService) {
         ClientType clientType = new ClientType();
         XRoadClientIdentifierType xRoadClientIdentifierType = new XRoadClientIdentifierType();
         xRoadClientIdentifierType.setXRoadInstance(service.getXRoadInstance());
@@ -212,7 +264,8 @@ public class XRoadClient {
         xRoadClientIdentifierType.setObjectType(service.getObjectType());
         clientType.setId(xRoadClientIdentifierType);
 
-        return MethodListUtil.openApiFromResponse(clientType, host, xRoadInstance, memberClass, memberCode, subsystemCode, catalogService);
+        return MethodListUtil.openApiFromResponse(clientType, host, xRoadInstance, memberClass, memberCode,
+                subsystemCode, catalogService);
     }
 
     private static Holder<String> queryId() {
@@ -231,15 +284,15 @@ public class XRoadClient {
         return new Holder<>(value);
     }
 
-    private static MetaServicesPort getMetaServicesPort(URL url) {
+    private static MetaServicesPort createMetaServicesPort(URL url) {
         ProducerPortService service = new ProducerPortService();
         MetaServicesPort port = service.getMetaServicesPortSoap11();
         BindingProvider bindingProvider = (BindingProvider) port;
         bindingProvider.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, url.toString());
 
         final HTTPConduit conduit = (HTTPConduit) ClientProxy.getClient(port).getConduit();
-        conduit.getClient().setConnectionTimeout(30000);
-        conduit.getClient().setReceiveTimeout(60000);
+        conduit.getClient().setConnectionTimeout(HTTP_CONNECTION_TIMEOUT);
+        conduit.getClient().setReceiveTimeout(HTTP_RECEIVE_TIMEOUT);
 
         return port;
     }

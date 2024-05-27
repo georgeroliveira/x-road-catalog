@@ -13,11 +13,27 @@
 package fi.vrk.xroad.catalog.lister;
 
 import com.google.common.collect.Lists;
+
+import fi.vrk.xroad.catalog.lister.generated.ErrorLog;
+import fi.vrk.xroad.catalog.lister.generated.ErrorLogList;
+import fi.vrk.xroad.catalog.lister.generated.GetErrors;
+import fi.vrk.xroad.catalog.lister.generated.GetErrorsResponse;
+import fi.vrk.xroad.catalog.lister.generated.GetOpenAPI;
+import fi.vrk.xroad.catalog.lister.generated.GetOpenAPIResponse;
+import fi.vrk.xroad.catalog.lister.generated.GetServiceType;
+import fi.vrk.xroad.catalog.lister.generated.GetServiceTypeResponse;
+import fi.vrk.xroad.catalog.lister.generated.GetWsdl;
+import fi.vrk.xroad.catalog.lister.generated.GetWsdlResponse;
+import fi.vrk.xroad.catalog.lister.generated.IsProvider;
+import fi.vrk.xroad.catalog.lister.generated.IsProviderResponse;
+import fi.vrk.xroad.catalog.lister.generated.ListMembers;
+import fi.vrk.xroad.catalog.lister.generated.ListMembersResponse;
+import fi.vrk.xroad.catalog.lister.generated.Member;
+import fi.vrk.xroad.catalog.lister.generated.MemberList;
 import fi.vrk.xroad.catalog.persistence.CatalogService;
 import fi.vrk.xroad.catalog.persistence.entity.OpenApi;
 import fi.vrk.xroad.catalog.persistence.entity.Wsdl;
 import fi.vrk.xroad.catalog.persistence.entity.Service;
-import fi.vrk.xroad.xroad_catalog_lister.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -29,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Endpoint
 @Slf4j
-@Profile({"default", "fi"})
+@Profile({ "default", "fi" })
 public class ServiceEndpointImpl implements ServiceEndpoint {
 
     @Autowired
@@ -47,7 +63,8 @@ public class ServiceEndpointImpl implements ServiceEndpoint {
         }
         ListMembersResponse response = new ListMembersResponse();
         response.setMemberList(new MemberList());
-        Iterable<Member> members = jaxbCatalogService.getAllMembers(request.getStartDateTime(), request.getEndDateTime());
+        Iterable<Member> members = jaxbCatalogService.getAllMembers(request.getStartDateTime(),
+                request.getEndDateTime());
         response.getMemberList().getMember().addAll(Lists.newArrayList(members));
         return response;
     }
@@ -97,7 +114,7 @@ public class ServiceEndpointImpl implements ServiceEndpoint {
         }
 
         member.getAllSubsystems().forEach(subsystem -> {
-            subsystem.getAllServices().forEach(service ->  {
+            subsystem.getAllServices().forEach(service -> {
                 if (service.hasWsdl() || service.hasOpenApi()) {
                     isProvider.set(Boolean.TRUE);
                 }
@@ -141,10 +158,12 @@ public class ServiceEndpointImpl implements ServiceEndpoint {
     public GetErrorsResponse getErrors(@RequestPayload GetErrors request) {
         GetErrorsResponse response = new GetErrorsResponse();
         response.setErrorLogList(new ErrorLogList());
-        Iterable<ErrorLog> errorLogEntries = jaxbCatalogService.getErrorLog(request.getStartDateTime(), request.getEndDateTime());
+        Iterable<ErrorLog> errorLogEntries = jaxbCatalogService.getErrorLog(request.getStartDateTime(),
+                request.getEndDateTime());
         if (errorLogEntries != null && !errorLogEntries.iterator().hasNext()) {
             throw new CatalogListerRuntimeException("ErrorLog entries since "
-                    + request.getStartDateTime().toString() + " until " + request.getEndDateTime().toString() + NOT_FOUND);
+                    + request.getStartDateTime().toString() + " until " + request.getEndDateTime().toString()
+                    + NOT_FOUND);
         }
         response.getErrorLogList().getErrorLog().addAll(errorLogEntries != null
                 ? Lists.newArrayList(errorLogEntries)

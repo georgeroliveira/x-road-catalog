@@ -15,9 +15,20 @@ package fi.vrk.xroad.catalog.persistence.entity;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.SequenceGenerator;
 
 @Entity
 @Getter
@@ -32,7 +43,8 @@ public class Wsdl {
     @ManyToOne
     @JoinColumn(name = "SERVICE_ID")
     private Service service;
-    // this is not lazy loaded since hibernate would need build-time bytecode enhancement
+    // this is not lazy loaded since hibernate would need build-time bytecode
+    // enhancement
     // this could be optimized e.g. by not mapping this data to JPA entity, and
     // fetching it directly with a native query
     @Basic(fetch = FetchType.LAZY)

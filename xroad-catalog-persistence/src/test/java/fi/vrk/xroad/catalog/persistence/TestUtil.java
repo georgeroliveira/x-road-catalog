@@ -12,14 +12,22 @@
  */
 package fi.vrk.xroad.catalog.persistence;
 
-import fi.vrk.xroad.catalog.persistence.entity.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
+
+import fi.vrk.xroad.catalog.persistence.entity.Member;
+import fi.vrk.xroad.catalog.persistence.entity.Service;
+import fi.vrk.xroad.catalog.persistence.entity.StatusInfo;
+import fi.vrk.xroad.catalog.persistence.entity.Subsystem;
+import fi.vrk.xroad.catalog.persistence.entity.Wsdl;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +58,7 @@ public class TestUtil {
 
     public Set<Long> getIds(Iterable entities) {
         Set<Long> set = new HashSet<Long>();
-        for (Object entity: entities) {
+        for (Object entity : entities) {
             Long id = getIdentifier(entity);
             set.add(id);
         }
@@ -154,8 +162,8 @@ public class TestUtil {
     }
 
     public void assertEqualities(StatusInfo original, StatusInfo checked,
-                                 boolean sameCreated, boolean sameChanged,
-                                 boolean sameRemoved, boolean sameFetched) {
+            boolean sameCreated, boolean sameChanged,
+            boolean sameRemoved, boolean sameFetched) {
 
         assertEquals(sameCreated, Objects.equals(original.getCreated(), checked.getCreated()));
         assertEquals(sameChanged, Objects.equals(original.getChanged(), checked.getChanged()));

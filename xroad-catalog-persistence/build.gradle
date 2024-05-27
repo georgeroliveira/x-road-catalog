@@ -4,11 +4,12 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'jacoco'
+    id 'catalogservice.java-checks'
 }
 
 group 'fi.vrk.xroad.catalog.persistence'
-sourceCompatibility = 11
-targetCompatibility = 11
+sourceCompatibility = 21
+targetCompatibility = 21
 
 repositories {
     mavenCentral()
@@ -59,5 +60,3 @@ jacocoTestReport {
         xml.required = true
     }
 }
-
-
