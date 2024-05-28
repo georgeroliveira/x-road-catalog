@@ -40,6 +40,15 @@ public final class JaxbServiceUtil {
         cs.setRemoved(toXmlGregorianCalendar(service.getStatusInfo().getRemoved()));
         cs.setServiceCode(service.getServiceCode());
         cs.setServiceVersion(service.getServiceVersion());
+        if (service.hasWsdl()) {
+            cs.setServiceType("SOAP");
+        } else if (service.hasOpenApi()) {
+            cs.setServiceType("OPENAPI");
+        } else if (service.hasRest()) {
+            cs.setServiceType("REST");
+        } else {
+            cs.setServiceType("UNKNOWN");
+        }
         Wsdl wsdl = null;
         if (onlyActiveChildren) {
             if (service.getWsdl() != null && !service.getWsdl().getStatusInfo().isRemoved()) {

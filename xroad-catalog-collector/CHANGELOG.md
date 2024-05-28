@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.7] - 2023-11-17
+
+# Changed
+- Refactor ListMembers endpoint to have extra field "serviceType"
+
+## [3.0.6] - 2023-11-09
+
+# Changed
+- Refactor fetch of companies
+
+## [3.0.5] - 2023-11-07
+
+# Changed
+- Pull latest version from NIIS develop branch
+
 ## [3.0.4] - 2023-02-13
 
 # Changed
