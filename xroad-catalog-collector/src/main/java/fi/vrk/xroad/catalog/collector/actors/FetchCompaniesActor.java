@@ -14,7 +14,6 @@ package fi.vrk.xroad.catalog.collector.actors;
 
 import fi.vrk.xroad.catalog.collector.util.OrganizationUtil;
 import fi.vrk.xroad.catalog.collector.wsimport.ClientType;
-import fi.vrk.xroad.catalog.collector.wsimport.XRoadClientIdentifierType;
 import fi.vrk.xroad.catalog.persistence.CatalogService;
 import fi.vrk.xroad.catalog.persistence.CompanyService;
 import fi.vrk.xroad.catalog.persistence.entity.BusinessAddress;
@@ -36,7 +35,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +45,9 @@ public class FetchCompaniesActor extends XRoadCatalogActor {
 
     @Value("${xroad-catalog.fetch-companies-url}")
     private String fetchCompaniesUrl;
+
+    @Value("${xroad-catalog.fetch-companies-limit}")
+    private Integer fetchCompaniesLimit;
 
     @Autowired
     protected CatalogService catalogService;
@@ -63,13 +64,19 @@ public class FetchCompaniesActor extends XRoadCatalogActor {
     protected boolean handleMessage(Object message) {
         if (message instanceof ClientType) {
             ClientType clientType = (ClientType) message;
-            XRoadClientIdentifierType client = clientType.getId();
-            log.info("Fetching data for company with businessCode {}", client.getMemberCode());
-            String businessCode = clientType.getId().getMemberCode();
-            JSONObject companyJson = OrganizationUtil.getCompany(clientType, fetchCompaniesUrl, businessCode,
+            JSONObject companiesJson = OrganizationUtil.getCompanies(clientType, fetchCompaniesLimit, fetchCompaniesUrl,
                     catalogService);
-            saveData(companyJson.optJSONArray("results"));
-            log.info("Successfully saved data for company with businessCode {}", businessCode);
+            JSONArray companiesArray = companiesJson.optJSONArray("results");
+            int numberOfCompanies = companiesArray.length();
+            log.info("Fetching data for {} companies", numberOfCompanies);
+            companiesArray.forEach(item -> {
+                JSONObject company = (JSONObject) item;
+                String businessCode = company.optString("businessId");
+                JSONObject companyJson = OrganizationUtil.getCompany(clientType, fetchCompaniesUrl, businessCode,
+                        catalogService);
+                saveData(companyJson.optJSONArray("results"));
+            });
+            log.info("Successfully saved data for {} companies", numberOfCompanies);
             return true;
         } else {
             return false;

@@ -43,6 +43,8 @@ public class OrganizationsActor extends XRoadCatalogActor {
 
     private boolean organizationsFetched = false;
 
+    private boolean companiesFetched = false;
+
     private static final String SERVICE_TYPE_REST = "REST";
 
     @Value("${xroad-catalog.security-server-host}")
@@ -139,7 +141,10 @@ public class OrganizationsActor extends XRoadCatalogActor {
     private void fetchCompanies(ClientType clientType) {
         if (MethodListUtil.shouldFetchCompanies(fetchCompaniesUnlimited, fetchCompaniesTimeAfterHour,
                 fetchCompaniesTimeBeforeHour)) {
-            fetchCompaniesPoolRef.tell(clientType, getSelf());
+            if (Boolean.FALSE.equals(companiesFetched)) {
+                fetchCompaniesPoolRef.tell(clientType, getSelf());
+                companiesFetched = true;
+            }
         }
     }
 
@@ -186,4 +191,3 @@ public class OrganizationsActor extends XRoadCatalogActor {
         }
     }
 }
-
