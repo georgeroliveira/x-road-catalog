@@ -708,7 +708,6 @@ public final class OrganizationUtil {
                     .memberClass(clientType.getId().getMemberClass())
                     .memberCode(clientType.getId().getMemberCode())
                     .groupCode(clientType.getId().getGroupCode())
-                    .securityCategoryCode(clientType.getId().getSecurityCategoryCode())
                     .serverCode(clientType.getId().getServerCode())
                     .serviceCode(clientType.getId().getServiceCode())
                     .serviceVersion(clientType.getId().getServiceVersion())
