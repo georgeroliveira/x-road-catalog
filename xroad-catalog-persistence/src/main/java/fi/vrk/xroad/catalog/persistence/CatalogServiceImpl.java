@@ -40,7 +40,6 @@ import fi.vrk.xroad.catalog.persistence.repository.RestRepository;
 import fi.vrk.xroad.catalog.persistence.repository.ServiceRepository;
 import fi.vrk.xroad.catalog.persistence.repository.SubsystemRepository;
 import fi.vrk.xroad.catalog.persistence.repository.WsdlRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -51,6 +50,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,7 +61,6 @@ import java.util.stream.StreamSupport;
 /**
  * Implementation for catalogservice CRUD
  */
-@Slf4j
 @Component("catalogService")
 @Transactional
 public class CatalogServiceImpl implements CatalogService {
@@ -287,18 +286,15 @@ public class CatalogServiceImpl implements CatalogService {
         List<Service> services = serviceRepository.findAllActive();
         LocalDateTime dateInPast = startDateTime;
         while (isDateBetweenDates(dateInPast, startDateTime, endDateTime)) {
-            // TODO: Why are we using AtomicLong here?
-            AtomicLong totalDistinctServices = new AtomicLong();
+            long totalDistinctServices = 0;
             List<Service> servicesBetweenDates = services.stream()
                     .filter(p -> p.getStatusInfo().getCreated().isBefore(endDateTime))
                     .toList();
             if (!servicesBetweenDates.isEmpty()) {
-                totalDistinctServices
-                        .set(servicesBetweenDates.stream().map(Service::getServiceCode).distinct().count());
+                totalDistinctServices = servicesBetweenDates.stream().map(Service::getServiceCode).distinct().count();
 
-                DistinctServiceStatistics serviceStatistics = DistinctServiceStatistics.builder()
-                        .created(dateInPast)
-                        .numberOfDistinctServices(totalDistinctServices.longValue()).build();
+                DistinctServiceStatistics serviceStatistics = DistinctServiceStatistics.builder().created(dateInPast)
+                        .numberOfDistinctServices(totalDistinctServices).build();
 
                 serviceStatisticsList.add(serviceStatistics);
             }
@@ -368,17 +364,19 @@ public class CatalogServiceImpl implements CatalogService {
     }
 
     @Override
-    public void saveAllMembersAndSubsystems(Collection<Member> members) {
+    public Set<Member> saveAllMembersAndSubsystems(Collection<Member> members) {
         LocalDateTime now = LocalDateTime.now();
         // process members
         Map<MemberId, Member> unprocessedOldMembers = new HashMap<>();
         StreamSupport.stream(memberRepository.findAll().spliterator(), false)
                 .forEach(member -> unprocessedOldMembers.put(member.createKey(), member));
+        Set<Member> newMembers = new HashSet<>();
 
         for (Member member : members) {
             Member oldMember = unprocessedOldMembers.get(member.createKey());
             if (oldMember == null) {
                 // brand new item
+                newMembers.add(member);
                 member.getStatusInfo().setTimestampsForNew(now);
                 for (Subsystem subsystem : member.getAllSubsystems()) {
                     subsystem.getStatusInfo().setTimestampsForNew(now);
@@ -395,6 +393,7 @@ public class CatalogServiceImpl implements CatalogService {
         // now unprocessedOldMembers should all be removed (either already removed, or
         // will be now)
         removeUnprocessedOldMembers(now, unprocessedOldMembers);
+        return newMembers;
     }
 
     @Override
@@ -603,6 +602,11 @@ public class CatalogServiceImpl implements CatalogService {
                 .servicesLastFetched(serviceRepository.findLatestFetched())
                 .subsystemsLastFetched(subsystemRepository.findLatestFetched())
                 .wsdlsLastFetched(wsdlRepository.findLatestFetched()).build();
+    }
+
+    @Override
+    public Set<String> getMembersRequiringExternalUpdate(int daysSinceLastUpdate, int batchSize) {
+        return memberRepository.findMembersRequiringExternalUpdate(daysSinceLastUpdate, batchSize);
     }
 
     private void handleOldMember(LocalDateTime now, Member member, Member oldMember) {

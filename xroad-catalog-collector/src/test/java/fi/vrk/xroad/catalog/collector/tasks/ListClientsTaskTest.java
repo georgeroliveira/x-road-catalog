@@ -33,6 +33,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,7 @@ import fi.vrk.xroad.catalog.collector.wsimport.ClientType;
 import fi.vrk.xroad.catalog.collector.wsimport.XRoadClientIdentifierType;
 import fi.vrk.xroad.catalog.collector.wsimport.XRoadObjectType;
 import fi.vrk.xroad.catalog.persistence.CatalogService;
+import fi.vrk.xroad.catalog.persistence.entity.Member;
 
 @SpringBootTest(classes = TaskPoolConfiguration.class)
 public class ListClientsTaskTest {
@@ -68,7 +70,6 @@ public class ListClientsTaskTest {
             TaskPoolConfiguration conf = applicationContext.getBean(TaskPoolConfiguration.class);
 
             ReflectionTestUtils.setField(conf, "fetchRunUnlimited", true);
-            ReflectionTestUtils.setField(conf, "fetchCompaniesRunUnlimited", true);
 
             ClientList clientList = new ClientList();
             clientList.getMember().add(createClientType(XRoadObjectType.MEMBER, "member1", null));
@@ -83,8 +84,14 @@ public class ListClientsTaskTest {
                     .thenReturn(clientList);
 
             final Queue<ClientType> listMethodsQueue = new ConcurrentLinkedQueue<>();
-            final Queue<ClientType> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
-            final Queue<ClientType> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+            final Queue<String> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
+            final Queue<String> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+
+            final Member member1 = new Member();
+            member1.setMemberCode("member1");
+            final Member member2 = new Member();
+            member2.setMemberCode("member2");
+            Mockito.when(catalogService.saveAllMembersAndSubsystems(any())).thenReturn(Set.of(member1, member2));
 
             ListClientsTask listClientsTask = new ListClientsTask(applicationContext, listMethodsQueue,
                     fetchCompaniesQueue, fetchOrganisationsQueue);
@@ -93,8 +100,8 @@ public class ListClientsTaskTest {
             verify(catalogService, times(1)).saveAllMembersAndSubsystems(any());
 
             assertEquals(5, listMethodsQueue.size());
-            assertEquals(1, fetchCompaniesQueue.size());
-            assertEquals(1, fetchOrganisationsQueue.size());
+            assertEquals(2, fetchCompaniesQueue.size());
+            assertEquals(2, fetchOrganisationsQueue.size());
         }
     }
 
@@ -119,8 +126,14 @@ public class ListClientsTaskTest {
             mocked.when(() -> ClientListUtil.clientListFromResponse(any())).thenReturn(clientList);
 
             final Queue<ClientType> listMethodsQueue = new ConcurrentLinkedQueue<>();
-            final Queue<ClientType> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
-            final Queue<ClientType> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+            final Queue<String> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
+            final Queue<String> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+
+            final Member member1 = new Member();
+            member1.setMemberCode("member1");
+            final Member member2 = new Member();
+            member2.setMemberCode("member2");
+            Mockito.when(catalogService.saveAllMembersAndSubsystems(any())).thenReturn(Set.of(member1, member2));
 
             ListClientsTask listClientsTask = new ListClientsTask(applicationContext, listMethodsQueue,
                     fetchCompaniesQueue, fetchOrganisationsQueue);
@@ -143,10 +156,6 @@ public class ListClientsTaskTest {
             ReflectionTestUtils.setField(conf, "fetchTimeAfterHour", 0);
             ReflectionTestUtils.setField(conf, "fetchTimeBeforeHour", 23);
 
-            ReflectionTestUtils.setField(conf, "fetchCompaniesRunUnlimited", false);
-            ReflectionTestUtils.setField(conf, "fetchCompaniesTimeAfterHour", 0);
-            ReflectionTestUtils.setField(conf, "fetchCompaniesTimeBeforeHour", 23);
-
             ClientList clientList = new ClientList();
             clientList.getMember().add(createClientType(XRoadObjectType.MEMBER, "member1", null));
             clientList.getMember().add(createClientType(XRoadObjectType.SUBSYSTEM, "member1", "sub1"));
@@ -159,8 +168,14 @@ public class ListClientsTaskTest {
             mocked.when(() -> ClientListUtil.clientListFromResponse(any())).thenReturn(clientList);
 
             final Queue<ClientType> listMethodsQueue = new ConcurrentLinkedQueue<>();
-            final Queue<ClientType> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
-            final Queue<ClientType> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+            final Queue<String> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
+            final Queue<String> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+
+            final Member member1 = new Member();
+            member1.setMemberCode("member1");
+            final Member member2 = new Member();
+            member2.setMemberCode("member2");
+            Mockito.when(catalogService.saveAllMembersAndSubsystems(any())).thenReturn(Set.of(member1, member2));
 
             ListClientsTask listClientsTask = new ListClientsTask(applicationContext, listMethodsQueue,
                     fetchCompaniesQueue, fetchOrganisationsQueue);
@@ -169,8 +184,8 @@ public class ListClientsTaskTest {
             verify(catalogService, times(1)).saveAllMembersAndSubsystems(any());
 
             assertEquals(5, listMethodsQueue.size());
-            assertEquals(1, fetchCompaniesQueue.size());
-            assertEquals(1, fetchOrganisationsQueue.size());
+            assertEquals(2, fetchCompaniesQueue.size());
+            assertEquals(2, fetchOrganisationsQueue.size());
         }
     }
 
@@ -185,8 +200,10 @@ public class ListClientsTaskTest {
             mocked.when(() -> ClientListUtil.clientListFromResponse(any())).thenReturn(clientList);
 
             final Queue<ClientType> listMethodsQueue = new ConcurrentLinkedQueue<>();
-            final Queue<ClientType> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
-            final Queue<ClientType> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+            final Queue<String> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
+            final Queue<String> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+
+            Mockito.when(catalogService.saveAllMembersAndSubsystems(any())).thenReturn(Set.of());
 
             ListClientsTask listClientsTask = new ListClientsTask(applicationContext, listMethodsQueue,
                     fetchCompaniesQueue, fetchOrganisationsQueue);
@@ -206,8 +223,8 @@ public class ListClientsTaskTest {
         ReflectionTestUtils.setField(conf, "fetchRunUnlimited", true);
 
         final Queue<ClientType> listMethodsQueue = new ConcurrentLinkedQueue<>();
-        final Queue<ClientType> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
-        final Queue<ClientType> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
+        final Queue<String> fetchCompaniesQueue = new ConcurrentLinkedQueue<>();
+        final Queue<String> fetchOrganisationsQueue = new ConcurrentLinkedQueue<>();
 
         ListClientsTask listClientsTask = new ListClientsTask(applicationContext, listMethodsQueue,
                 fetchCompaniesQueue, fetchOrganisationsQueue);

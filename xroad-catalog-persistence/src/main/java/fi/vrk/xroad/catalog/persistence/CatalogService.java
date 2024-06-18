@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * CRUD methods for catalog objects. no business logic (e.g. hash calculation),
@@ -233,8 +234,9 @@ public interface CatalogService {
      *                member.subsystems collection populated, and each subsystem
      *                should
      *                have subsystem.member populated as well.
+     * @return Set of Member entities representing new members saved to the database
      */
-    void saveAllMembersAndSubsystems(Collection<Member> members);
+    Set<Member> saveAllMembersAndSubsystems(Collection<Member> members);
 
     /**
      * Stores services for given subsystem. Does not modify the associated Subsystem
@@ -338,5 +340,16 @@ public interface CatalogService {
      * @param daysBefore older than daysBefore
      */
     void deleteOldErrorLogEntries(Integer daysBefore);
+
+    /**
+     * Returns a batch of Member codes for members that haven't had their Company or
+     * Organization data updated for
+     * the specified number of days.
+     *
+     * @param daysSinceLastUpdate number of days since last update
+     * @param batchSize           number of items to return
+     * @return List of Member codes
+     */
+    Set<String> getMembersRequiringExternalUpdate(int daysSinceLastUpdate, int batchSize);
 
 }

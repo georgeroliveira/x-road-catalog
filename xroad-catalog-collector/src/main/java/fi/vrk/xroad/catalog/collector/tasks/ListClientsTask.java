@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 import org.springframework.context.ApplicationContext;
 
@@ -48,16 +49,16 @@ import fi.vrk.xroad.catalog.persistence.entity.Subsystem;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ListClientsTask {
+public class ListClientsTask implements Runnable {
 
     private final TaskPoolConfiguration taskPoolConfiguration;
     private final CatalogService catalogService;
     private final Queue<ClientType> listMethodsQueue;
-    private final Queue<ClientType> fetchCompaniesQueue;
-    private final Queue<ClientType> fetchOrganizationsQueue;
+    private final Queue<String> fetchCompaniesQueue;
+    private final Queue<String> fetchOrganizationsQueue;
 
     public ListClientsTask(ApplicationContext applicationContext, Queue<ClientType> listMethodsQueue,
-            Queue<ClientType> fetchCompaniesQueue, Queue<ClientType> fetchOrganizationsQueue) {
+            Queue<String> fetchCompaniesQueue, Queue<String> fetchOrganizationsQueue) {
         this.taskPoolConfiguration = applicationContext.getBean(TaskPoolConfiguration.class);
         this.catalogService = applicationContext.getBean(CatalogService.class);
         this.listMethodsQueue = listMethodsQueue;
@@ -84,7 +85,7 @@ public class ListClientsTask {
             log.info("Getting client list from {}", listClientsUrl);
             ClientList clientList = ClientListUtil.clientListFromResponse(listClientsUrl);
             HashMap<MemberId, Member> m = populateMapWithMembers(clientList);
-            catalogService.saveAllMembersAndSubsystems(m.values());
+            Set<Member> newMembers = catalogService.saveAllMembersAndSubsystems(m.values());
 
             // We only fetch WSDL-s and REST services from subsystems
             List<ClientType> subsystems = clientList.getMember().stream()
@@ -95,26 +96,18 @@ public class ListClientsTask {
             log.info("All subsystems ({}) sent to ListMethodsTask", subsystems.size());
 
             // The fetchCompaniesQueue and fetchOrganizationsQueue should only be
-            // initialized if the FI profile is active. The current actor implementation
-            // only ran these once and the specific client had no effect. This should be
-            // refactored once we get clarification on how this is expected to work.
-            if (fetchCompaniesQueue != null
-                    && CollectorUtils.shouldFetchCompanies(taskPoolConfiguration.isFetchCompaniesRunUnlimited(),
-                            taskPoolConfiguration.getFetchCompaniesTimeAfterHour(),
-                            taskPoolConfiguration.getFetchCompaniesTimeBeforeHour())) {
-                fetchCompaniesQueue.add(clientList.getMember().getFirst());
-                log.info("Notice send to the FetchCompaniesTask to do work");
+            // initialized if the FI profile is active.
+            if (fetchCompaniesQueue != null) {
+                fetchCompaniesQueue.addAll(newMembers.stream().map(Member::getMemberCode).toList());
+                log.info("{} new members sent to the FetchCompaniesTask", newMembers.size());
             }
             if (fetchOrganizationsQueue != null) {
-                fetchOrganizationsQueue.add(clientList.getMember().getFirst());
-                log.info("Notice sent to the FetchOrganizationsTask to do work");
+                fetchOrganizationsQueue.addAll(newMembers.stream().map(Member::getMemberCode).toList());
+                log.info("{} new members sent to the FetchOrganizationsTask", newMembers.size());
             }
-        } catch (
-
-        Exception e) {
+        } catch (Exception e) {
             ErrorLog errorLog = CollectorUtils.createErrorLog(null,
-                    "Error when fetching listClients(url: " + listClientsUrl + "): " + e.getMessage(),
-                    "500");
+                    "Error when fetching listClients(url: " + listClientsUrl + "): " + e.getMessage(), "500");
             catalogService.saveErrorLog(errorLog);
             log.error("Error when fetching listClients(url: {})", listClientsUrl, e);
         }
@@ -126,7 +119,7 @@ public class ListClientsTask {
         int clientCounter = 0;
         for (ClientType clientType : clientList.getMember()) {
             clientCounter++;
-            log.info("{} - {}", clientCounter, ClientTypeUtil.toString(clientType));
+            log.debug("{} - {}", clientCounter, ClientTypeUtil.toString(clientType));
             Member newMember = new Member(clientType.getId().getXRoadInstance(), clientType.getId()
                     .getMemberClass(),
                     clientType.getId().getMemberCode(), clientType.getName());
